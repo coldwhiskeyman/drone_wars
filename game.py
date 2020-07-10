@@ -3,7 +3,7 @@
 # pip install -r requirements.txt
 
 from astrobox.space_field import SpaceField
-
+# TODO - Переименуйте класс своего дрона по шаблону [Фамилия]Drone
 from pestov import NostromoDrone
 
 

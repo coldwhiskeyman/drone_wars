@@ -27,6 +27,7 @@ class NostromoDrone(Drone):
 
     def on_unload_complete(self):
         self.target = self.get_the_closest_asteroid()
+        # TODO - Здесь ругается на ошибку (видимо нет подходящих астеройдов) в конце игры
         self.move_at(self.target)
 
     def on_wake_up(self):
