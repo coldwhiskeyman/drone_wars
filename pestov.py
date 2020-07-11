@@ -1,7 +1,7 @@
 from astrobox.core import Drone
 
 
-class NostromoDrone(Drone):
+class PestovDrone(Drone):
     my_team = []
 
     def on_born(self):
@@ -27,8 +27,8 @@ class NostromoDrone(Drone):
 
     def on_unload_complete(self):
         self.target = self.get_the_closest_asteroid()
-        # TODO - Здесь ругается на ошибку (видимо нет подходящих астеройдов) в конце игры
-        self.move_at(self.target)
+        if self.target:
+        	self.move_at(self.target)
 
     def on_wake_up(self):
         self.target = self.get_the_closest_asteroid()
