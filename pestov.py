@@ -28,7 +28,7 @@ class PestovDrone(Drone):
     def on_unload_complete(self):
         self.target = self.get_the_closest_asteroid()
         if self.target:
-        	self.move_at(self.target)
+            self.move_at(self.target)
 
     def on_wake_up(self):
         self.target = self.get_the_closest_asteroid()

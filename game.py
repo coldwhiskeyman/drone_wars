@@ -13,3 +13,5 @@ if __name__ == '__main__':
     )
     d = PestovDrone()
     scene.go()
+
+# Первый этап: зачёт!
