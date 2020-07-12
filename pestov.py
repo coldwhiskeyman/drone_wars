@@ -25,10 +25,7 @@ class PestovDrone(Drone):
                 self.move_at(self.my_mothership)
 
     def on_stop_at_mothership(self, mothership):
-        if not self.is_empty:
-            self.unload_to(mothership)
-        else:
-            self.move_to_the_closest_asteroid()
+        self.unload_to(mothership)
 
     def on_unload_complete(self):
         self.move_to_the_closest_asteroid()
@@ -37,25 +34,12 @@ class PestovDrone(Drone):
         self.move_to_the_closest_asteroid()
 
     def move_to_the_closest_asteroid(self):
-        while True:
-            self.target = self.get_the_closest_asteroid()
-            if self.target:
-                for drone in self.my_team:
-                    if drone != self and drone.target == self.target:
-                        if self.distance_to(self.target) >= drone.distance_to(self.target):
-                            break
-                        else:
-                            self.unavailable_asteroids.append(self.target)
-                            drone.move_to_the_closest_asteroid()
-                            self.unavailable_asteroids.remove(self.target)
-                else:
-                    self.unavailable_asteroids.append(self.target)
-                    self.move_at(self.target)
-                    break
-            else:
-                self.move_at(self.my_mothership)
-                break
-
+        self.target = self.get_the_closest_asteroid()
+        self.unavailable_asteroids.append(self.target)
+        if self.target:
+            self.move_at(self.target)
+        else:
+            self.move_at(self.my_mothership)
 
     def get_the_closest_asteroid(self):
         distances = {}
