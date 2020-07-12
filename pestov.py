@@ -3,10 +3,10 @@ from astrobox.core import Drone
 
 class PestovDrone(Drone):
     my_team = []
+    unavailable_asteroids = []
 
     def on_born(self):
-        self.target = self.get_the_closest_asteroid()
-        self.move_at(self.target)
+        self.move_to_the_closest_asteroid()
         self.my_team.append(self)
 
     def on_stop_at_asteroid(self, asteroid):
@@ -14,6 +14,8 @@ class PestovDrone(Drone):
 
     def on_load_complete(self):
         if self.is_full:
+            if self.target.payload != 0:
+                self.unavailable_asteroids.remove(self.target)
             self.move_at(self.my_mothership)
         else:
             self.target = self.get_the_closest_asteroid()
@@ -26,19 +28,23 @@ class PestovDrone(Drone):
         self.unload_to(mothership)
 
     def on_unload_complete(self):
-        self.target = self.get_the_closest_asteroid()
-        if self.target:
-            self.move_at(self.target)
+        self.move_to_the_closest_asteroid()
 
     def on_wake_up(self):
+        self.move_to_the_closest_asteroid()
+
+    def move_to_the_closest_asteroid(self):
         self.target = self.get_the_closest_asteroid()
+        self.unavailable_asteroids.append(self.target)
         if self.target:
             self.move_at(self.target)
+        else:
+            self.move_at(self.my_mothership)
 
     def get_the_closest_asteroid(self):
         distances = {}
         for asteroid in self.asteroids:
-            if asteroid.payload != 0:
+            if asteroid not in self.unavailable_asteroids:
                 distance = self.distance_to(asteroid)
                 distances[asteroid] = distance
         for asteroid, distance in distances.items():

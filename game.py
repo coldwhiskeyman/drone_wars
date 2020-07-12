@@ -11,7 +11,7 @@ if __name__ == '__main__':
         speed=3,
         asteroids_count=5,
     )
-    d = PestovDrone()
+    drones = [PestovDrone() for _ in range(5)]
     scene.go()
 
 # Первый этап: зачёт!
