@@ -1,6 +1,10 @@
 from astrobox.core import Drone
 
 
+class CantInterceptException(Exception):
+    pass
+
+
 class PestovDrone(Drone):
     my_team = []
     unavailable_asteroids = []
@@ -18,11 +22,10 @@ class PestovDrone(Drone):
                 self.unavailable_asteroids.remove(self.target)
             self.move_at(self.my_mothership)
         else:
-            self.target = self.get_the_closest_asteroid()
-            if self.target:
-                self.move_at(self.target)
-            else:
-                self.move_at(self.my_mothership)
+            try:
+                self.intercept_asteroid()
+            except CantInterceptException:
+                self.move_to_the_closest_asteroid()
 
     def on_stop_at_mothership(self, mothership):
         self.unload_to(mothership)
@@ -40,6 +43,25 @@ class PestovDrone(Drone):
             self.move_at(self.target)
         else:
             self.move_at(self.my_mothership)
+
+    def intercept_asteroid(self):
+        distances = {}
+        for asteroid in self.unavailable_asteroids:
+            if asteroid:  # очень кривая попытка избежать ошибки
+                # иногда в список попадает None, непонятно как.
+                distance = self.distance_to(asteroid)
+                for drone in self.my_team:
+                    if drone != self and drone.target == asteroid:
+                        if drone.distance_to(asteroid) > distance:
+                            distances[asteroid] = [drone, distance]
+        for asteroid, data in distances.items():
+            if data == min(distances.values(), key=lambda x: x[1]):
+                self.unavailable_asteroids.remove(asteroid)
+                self.move_to_the_closest_asteroid()
+                data[0].move_to_the_closest_asteroid()
+                break
+        else:
+            raise CantInterceptException
 
     def get_the_closest_asteroid(self):
         distances = {}
