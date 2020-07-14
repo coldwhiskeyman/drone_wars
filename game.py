@@ -9,7 +9,7 @@ from pestov import PestovDrone
 if __name__ == '__main__':
     scene = SpaceField(
         speed=3,
-        asteroids_count=5,
+        asteroids_count=15,
     )
     drones = [PestovDrone() for _ in range(5)]
     scene.go()

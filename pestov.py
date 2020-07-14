@@ -21,6 +21,8 @@ class PestovDrone(Drone):
     def on_load_complete(self):
         """Действие при завершении загрузки элериума"""
         if self.is_full:
+            # TODO - Т.е. если трюм полон, то освобождаем self.unavailable_asteroids
+            #  а если не полный, то игнорируем?
             if self.target.payload != 0:
                 self.unavailable_asteroids.remove(self.target)
             self.move_at(self.my_mothership)
@@ -59,6 +61,8 @@ class PestovDrone(Drone):
         for asteroid in self.unavailable_asteroids:
             if asteroid:  # очень кривая попытка избежать ошибки
                 # иногда в список попадает None, непонятно как.
+                # TODO - Посмотрите self.unavailable_asteroids
+                #  в процессе добавляются None. Почему - стоит разобраться
                 distance = self.distance_to(asteroid)
                 for drone in self.my_team:
                     if drone != self and drone.target == asteroid:
@@ -75,6 +79,10 @@ class PestovDrone(Drone):
 
     def get_the_closest_asteroid(self):
         """Выбор ближайшего к дрону астероида"""
+        # TODO - попробуйте улушить эту функцию:
+        #  Создать список кортежей (астеройд, расстояние)
+        #  Затем взять минимальный элемент функцией min и параметром key
+        #  Получится буквально три строки
         distances = {}
         for asteroid in self.asteroids:
             if asteroid not in self.unavailable_asteroids:
