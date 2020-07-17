@@ -9,14 +9,12 @@ class CantInterceptException(Exception):
 class PestovDrone(Drone):
     my_team = []
     unavailable_asteroids = []
-    empty_distance = 0.0
-    not_full_distance = 0.0
-    full_distance = 0.0
 
-    def __init__(self, **kwargs):
+    def __init__(self, logger, **kwargs):
         super().__init__(**kwargs)
         self.waiting = False
         self.previous_target = Point(self.x, self.y)
+        self._logger = logger
 
     def on_born(self):
         """Действие при активации дрона"""
@@ -25,7 +23,7 @@ class PestovDrone(Drone):
 
     def on_stop_at_asteroid(self, asteroid):
         """Действие при встрече с астероидом"""
-        self.log_route()
+        self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
         self.load_from(asteroid)
 
@@ -43,7 +41,7 @@ class PestovDrone(Drone):
 
     def on_stop_at_mothership(self, mothership):
         """Действие при возвращении на базу"""
-        self.log_route()
+        self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
         if not self.is_empty:
             self.unload_to(mothership)
@@ -88,11 +86,11 @@ class PestovDrone(Drone):
                         distances[asteroid] = [drone, distance]
         for asteroid, data in distances.items():
             if data == min(distances.values(), key=lambda x: x[1]):
-                self.log_route()
+                self._logger.log_route(self)
                 self.previous_target = Point(self.x, self.y)
                 self.unavailable_asteroids.remove(asteroid)
                 self.move_to_the_closest_asteroid()
-                data[0].log_route()
+                data[0]._logger.log_route(data[0])
                 data[0].previous_target = Point(self.x, self.y)
                 data[0].move_to_the_closest_asteroid()
                 break
@@ -115,18 +113,9 @@ class PestovDrone(Drone):
             if len(self.asteroids) > len(self.unavailable_asteroids):
                 self.waiting = False
                 self.move_to_the_closest_asteroid()
-
-    def log_route(self):
-        distance = self.distance_to(self.previous_target)
-        if self.is_empty:
-            self.empty_distance += distance
-        elif self.is_full:
-            self.full_distance += distance
-        else:
-            self.not_full_distance += distance
-
-    def write_statistics(self):
-        with open('drones_statistics.log', 'a') as log:
-            log.write('Пройдено в незагруженном состоянии: ' + str(round(self.empty_distance)))
-            log.write('Пройдено в полузагруженном состоянии: ' + str(round(self.not_full_distance)))
-            log.write('Пройдено в загруженном состоянии: ' + str(round(self.full_distance)))
+        if not self._logger.statistics_written:
+            for drone in self.my_team:
+                if not drone.waiting:
+                    break
+            else:
+                self._logger.write_statistics()
