@@ -46,6 +46,8 @@ class PestovDrone(Drone):
         if not self.is_empty:
             self.unload_to(mothership)
         else:
+            # TODO - метод on_unload_complete - это метод движка. Такие методы лучше самостоятельно не вызывать
+            #  Если требуется такой же код, то лучше его вынести в отдельный метод и вызывать его в нужных местах
             self.on_unload_complete()
 
     def on_unload_complete(self):
@@ -99,11 +101,14 @@ class PestovDrone(Drone):
 
     def get_the_closest_asteroid(self):
         """Выбор ближайшего к дрону астероида"""
-        distances = []
-        for asteroid in self.asteroids:
-            if asteroid not in self.unavailable_asteroids:
-                distance = self.distance_to(asteroid)
-                distances.append((asteroid, distance))
+        # distances = []
+        # for asteroid in self.asteroids:
+        #     if asteroid not in self.unavailable_asteroids:
+        #         distance = self.distance_to(asteroid)
+        #         distances.append((asteroid, distance))
+        # Так тоже можно:
+        distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
+                     if asteroid not in self.unavailable_asteroids]
         if distances:
             return (min(distances, key=lambda x: x[1]))[0]
 
