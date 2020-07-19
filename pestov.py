@@ -46,12 +46,14 @@ class PestovDrone(Drone):
         if not self.is_empty:
             self.unload_to(mothership)
         else:
-            # TODO - метод on_unload_complete - это метод движка. Такие методы лучше самостоятельно не вызывать
-            #  Если требуется такой же код, то лучше его вынести в отдельный метод и вызывать его в нужных местах
-            self.on_unload_complete()
+            self.try_to_depart()
 
     def on_unload_complete(self):
         """Действие при завершении разгрузки дрона"""
+        self.try_to_depart()
+
+    def try_to_depart(self):
+        """Отправление с базы"""
         self.move_to_the_closest_asteroid()
         if self.target == self.my_mothership:
             self.waiting = True
@@ -101,23 +103,31 @@ class PestovDrone(Drone):
 
     def get_the_closest_asteroid(self):
         """Выбор ближайшего к дрону астероида"""
-        # distances = []
-        # for asteroid in self.asteroids:
-        #     if asteroid not in self.unavailable_asteroids:
-        #         distance = self.distance_to(asteroid)
-        #         distances.append((asteroid, distance))
-        # Так тоже можно:
         distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
-        if distances:
-            return (min(distances, key=lambda x: x[1]))[0]
+
+        while True:
+            if distances:
+                closest_asteroid = (min(distances, key=lambda x: x[1]))[0]
+                for drone in self.scene.drones:
+                    if drone not in self.my_team:
+                        if drone.target == closest_asteroid and drone.distance_to(drone.target) < self.distance_to(drone.target):
+                            distances.remove(min(distances, key=lambda x: x[1]))
+                            break
+                else:
+                    return closest_asteroid
+            else:
+                break
 
     def game_step(self):
         super().game_step()
         if self.waiting:
             if len(self.asteroids) > len(self.unavailable_asteroids):
                 self.waiting = False
-                self.move_to_the_closest_asteroid()
+                self.try_to_depart()
+        for asteroid in self.asteroids:
+            if asteroid not in self.unavailable_asteroids and asteroid.payload == 0:
+                self.unavailable_asteroids.append(asteroid)
         if not self._logger.statistics_written:
             for drone in self.my_team:
                 if not drone.waiting:
