@@ -31,7 +31,7 @@ class PestovDrone(Drone):
         """Действие при завершении загрузки элериума"""
         if self.target.payload != 0:
             self.unavailable_asteroids.remove(self.target)
-        if self.is_full:
+        if self.payload >= 90:
             self.move_to_mothership()
         else:
             try:
