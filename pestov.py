@@ -106,18 +106,30 @@ class PestovDrone(Drone):
         distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
 
+        distances_to_rich = [data for data in distances if data[0].payload >= 100]
+
+        result = self.get_the_closest_asteroid_from_list(distances_to_rich)
+        if result:
+            return result
+        else:
+            result = self.get_the_closest_asteroid_from_list(distances)
+            if result:
+                return result
+
+    def get_the_closest_asteroid_from_list(self, asteroids):
+        """Возвращает ближайший к дрону астероид из переданного списка"""
         while True:
-            if distances:
-                closest_asteroid = (min(distances, key=lambda x: x[1]))[0]
+            if asteroids:
+                closest_asteroid = (min(asteroids, key=lambda x: x[1]))[0]
                 for drone in self.scene.drones:
                     if drone not in self.my_team:
                         if drone.target == closest_asteroid and drone.distance_to(drone.target) < self.distance_to(drone.target):
-                            distances.remove(min(distances, key=lambda x: x[1]))
+                            asteroids.remove(min(asteroids, key=lambda x: x[1]))
                             break
                 else:
                     return closest_asteroid
             else:
-                break
+                return None
 
     def game_step(self):
         super().game_step()
