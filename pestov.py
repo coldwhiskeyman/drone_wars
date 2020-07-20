@@ -115,13 +115,10 @@ class PestovDrone(Drone):
 
         distances_to_rich = [data for data in distances if data[0].payload >= 100]
 
-        closest_asteroid = (min(distances_to_rich, key=lambda x: x[1]))[0]
-        if closest_asteroid:
-            return closest_asteroid
+        if distances_to_rich:
+            return (min(distances_to_rich, key=lambda x: x[1]))[0]
         else:
-            closest_asteroid = (min(distances, key=lambda x: x[1]))[0]
-            if closest_asteroid:
-                return closest_asteroid
+            return (min(distances, key=lambda x: x[1]))[0]
 
     def game_step(self):
         super().game_step()
