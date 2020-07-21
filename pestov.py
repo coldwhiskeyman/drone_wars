@@ -18,8 +18,8 @@ class PestovDrone(Drone):
 
     def on_born(self):
         """Действие при активации дрона"""
-        self.move_to_the_closest_asteroid()
         self.my_team.append(self)
+        self.move_to_the_closest_asteroid()
 
     def on_stop_at_asteroid(self, asteroid):
         """Действие при встрече с астероидом"""
@@ -102,22 +102,26 @@ class PestovDrone(Drone):
             raise CantInterceptException
 
     def get_the_closest_asteroid(self):
-        """Выбор ближайшего к дрону астероида"""
+        """
+        Выбор ближайшего к дрону астероида.
+        В первую очередь выбираются богатые элериумом астероиды.
+        """
         distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
 
         for drone in self.scene.drones:
-            if drone not in self.my_team:
+            if drone not in self.my_team and drone.target:
                 if drone.distance_to(drone.target) < self.distance_to(drone.target):
                     for data in distances:
                         if data[0] == drone.target:
                             distances.remove(data)
+                            break
 
         distances_to_rich = [data for data in distances if data[0].payload >= 100]
 
         if distances_to_rich:
             return (min(distances_to_rich, key=lambda x: x[1]))[0]
-        else:
+        elif distances:
             return (min(distances, key=lambda x: x[1]))[0]
 
     def game_step(self):
