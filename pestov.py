@@ -14,6 +14,7 @@ class PestovDrone(Drone):
         super().__init__(**kwargs)
         self.waiting = False
         self.previous_target = Point(self.x, self.y)
+        self.next_target = None
         self._logger = logger
 
     def on_born(self):
@@ -33,11 +34,15 @@ class PestovDrone(Drone):
             self.unavailable_asteroids.remove(self.target)
         if self.payload >= 90:
             self.move_to_mothership()
+        elif self.next_target:
+            self.target = self.next_target
+            self.next_target = None
+            self.move_at(self.target)
         else:
             try:
                 self.intercept_asteroid()
             except CantInterceptException:
-                self.move_to_the_closest_asteroid()
+                self.move_to_the_closest_asteroid() 
 
     def on_stop_at_mothership(self, mothership):
         """Действие при возвращении на базу"""
@@ -64,6 +69,7 @@ class PestovDrone(Drone):
     def move_to_mothership(self):
         """Двигаться на базу"""
         self.target = self.my_mothership
+        self.next_target = None
         self.move_at(self.target)
 
     def move_to_the_closest_asteroid(self):
@@ -71,6 +77,10 @@ class PestovDrone(Drone):
         self.target = self.get_the_closest_asteroid()
         if self.target:
             self.unavailable_asteroids.append(self.target)
+            if self.target.payload < 100:
+                self.next_target = self.make_route()
+                if self.next_target:
+                    self.unavailable_asteroids.append(self.next_target)
             self.move_at(self.target)
         else:
             self.target = self.my_mothership
@@ -109,13 +119,7 @@ class PestovDrone(Drone):
         distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
 
-        for drone in self.scene.drones:
-            if drone not in self.my_team and drone.target:
-                if drone.distance_to(drone.target) < self.distance_to(drone.target):
-                    for data in distances:
-                        if data[0] == drone.target:
-                            distances.remove(data)
-                            break
+        self.substract_asteroids_occupied_by_enemy(distances)
 
         distances_to_rich = [data for data in distances if data[0].payload >= 100]
 
@@ -123,6 +127,25 @@ class PestovDrone(Drone):
             return (min(distances_to_rich, key=lambda x: x[1]))[0]
         elif distances:
             return (min(distances, key=lambda x: x[1]))[0]
+
+    def make_route(self):
+        """Выбрать ближайший к текущей цели астероид"""
+        distances = [(asteroid, self.target.distance_to(asteroid)) for asteroid in self.asteroids
+                     if asteroid not in self.unavailable_asteroids]
+
+        self.substract_asteroids_occupied_by_enemy(distances)
+
+        if distances:
+            return (min(distances, key=lambda x: x[1]))[0]
+
+    def substract_asteroids_occupied_by_enemy(self, distances):
+        for drone in self.scene.drones:
+            if drone not in self.my_team and drone.target:
+                if drone.distance_to(drone.target) < self.distance_to(drone.target):
+                    for data in distances:
+                        if data[0] == drone.target:
+                            distances.remove(data)
+                            break
 
     def game_step(self):
         super().game_step()
