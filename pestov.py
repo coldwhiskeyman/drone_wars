@@ -42,7 +42,7 @@ class PestovDrone(Drone):
             try:
                 self.intercept_asteroid()
             except CantInterceptException:
-                self.move_to_the_closest_asteroid() 
+                self.move_to_the_closest_asteroid()
 
     def on_stop_at_mothership(self, mothership):
         """Действие при возвращении на базу"""
@@ -119,7 +119,13 @@ class PestovDrone(Drone):
         distances = [(asteroid, self.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
 
-        self.substract_asteroids_occupied_by_enemy(distances)
+        for drone in self.scene.drones:
+            if drone not in self.my_team and drone.target:
+                if drone.distance_to(drone.target) < self.distance_to(drone.target):
+                    for data in distances:
+                        if data[0] == drone.target:
+                            distances.remove(data)
+                            break
 
         distances_to_rich = [data for data in distances if data[0].payload >= 100]
 
@@ -133,19 +139,16 @@ class PestovDrone(Drone):
         distances = [(asteroid, self.target.distance_to(asteroid)) for asteroid in self.asteroids
                      if asteroid not in self.unavailable_asteroids]
 
-        self.substract_asteroids_occupied_by_enemy(distances)
-
-        if distances:
-            return (min(distances, key=lambda x: x[1]))[0]
-
-    def substract_asteroids_occupied_by_enemy(self, distances):
         for drone in self.scene.drones:
             if drone not in self.my_team and drone.target:
-                if drone.distance_to(drone.target) < self.distance_to(drone.target):
+                if drone.distance_to(drone.target) < self.distance_to(self.target) + self.target.distance_to(drone.target):
                     for data in distances:
                         if data[0] == drone.target:
                             distances.remove(data)
                             break
+
+        if distances:
+            return (min(distances, key=lambda x: x[1]))[0]
 
     def game_step(self):
         super().game_step()
