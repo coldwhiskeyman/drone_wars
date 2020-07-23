@@ -95,10 +95,14 @@ class PestovDrone(Drone):
         for asteroid in self.unavailable_asteroids:
             distance = self.distance_to(asteroid)
             for drone in self.my_team:
+                # TODO - Два if можно объединить в один
                 if drone != self and drone.target == asteroid:
                     if drone.distance_to(asteroid) > distance:
                         distances[asteroid] = [drone, distance]
         for asteroid, data in distances.items():
+            # TODO - Нейминг! data - что это по сути?
+            #  Не понятно что такое data, да ещё помещённое в лямбда-выражение в условии проверки - треш
+            # TODO - Лямбда-выражение посчитать до проверки условия
             if data == min(distances.values(), key=lambda x: x[1]):
                 self._logger.log_route(self)
                 self.previous_target = Point(self.x, self.y)
@@ -120,6 +124,8 @@ class PestovDrone(Drone):
                      if asteroid not in self.unavailable_asteroids]
 
         for drone in self.scene.drones:
+            # TODO - Два if-а можно объединить в один, но он получится сложный для восприятия
+            #  поэтому такую проверку можно оформить как метод, возвращающий Tue/False
             if drone not in self.my_team and drone.target:
                 if drone.distance_to(drone.target) < self.distance_to(drone.target):
                     for data in distances:
@@ -140,6 +146,9 @@ class PestovDrone(Drone):
                      if asteroid not in self.unavailable_asteroids]
 
         for drone in self.scene.drones:
+            # TODO - Два if-а можно объединить в один, но он получится сложный для восприятия
+            #  поэтому такую проверку можно оформить как метод, возвращающий True/False
+            #  Кстати, првоерки эта и выше - очень похожи
             if drone not in self.my_team and drone.target:
                 if drone.distance_to(drone.target) < self.distance_to(self.target) + self.target.distance_to(drone.target):
                     for data in distances:
