@@ -26,6 +26,10 @@ class PestovDrone(Drone):
         """Действие при встрече с астероидом"""
         self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
+        if self.next_target:
+            self.turn_to(self.next_target)
+        elif self.payload + asteroid.payload >= 90:
+            self.turn_to(self.my_mothership)
         self.load_from(asteroid)
 
     def on_load_complete(self):
@@ -46,6 +50,7 @@ class PestovDrone(Drone):
 
     def on_stop_at_mothership(self, mothership):
         """Действие при возвращении на базу"""
+        self.turn_to(self.previous_target)  # да, бессмысленно, но главное, что развернется на ~180 градусов
         self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
         if not self.is_empty:
@@ -84,7 +89,10 @@ class PestovDrone(Drone):
             self.move_at(self.target)
         else:
             self.target = self.my_mothership
-            self.move_at(self.target)
+            if self.near(self.my_mothership):
+                self.waiting = True
+            else:
+                self.move_at(self.target)
 
     def intercept_asteroid(self):
         """
@@ -95,22 +103,20 @@ class PestovDrone(Drone):
         for asteroid in self.unavailable_asteroids:
             distance = self.distance_to(asteroid)
             for drone in self.my_team:
-                # TODO - Два if можно объединить в один
-                if drone != self and drone.target == asteroid:
-                    if drone.distance_to(asteroid) > distance:
-                        distances[asteroid] = [drone, distance]
-        for asteroid, data in distances.items():
-            # TODO - Нейминг! data - что это по сути?
-            #  Не понятно что такое data, да ещё помещённое в лямбда-выражение в условии проверки - треш
-            # TODO - Лямбда-выражение посчитать до проверки условия
-            if data == min(distances.values(), key=lambda x: x[1]):
+                if drone != self and\
+                        drone.target == asteroid and\
+                        drone.distance_to(asteroid) > distance:
+                    distances[asteroid] = [drone, distance]
+        for asteroid, drone_distance_pair in distances.items():
+            closest_drone = min(distances.values(), key=lambda x: x[1])
+            if drone_distance_pair == closest_drone:
                 self._logger.log_route(self)
                 self.previous_target = Point(self.x, self.y)
                 self.unavailable_asteroids.remove(asteroid)
                 self.move_to_the_closest_asteroid()
-                data[0]._logger.log_route(data[0])
-                data[0].previous_target = Point(self.x, self.y)
-                data[0].move_to_the_closest_asteroid()
+                drone_distance_pair[0]._logger.log_route(drone_distance_pair[0])
+                drone_distance_pair[0].previous_target = Point(self.x, self.y)
+                drone_distance_pair[0].move_to_the_closest_asteroid()
                 break
         else:
             raise CantInterceptException
@@ -124,16 +130,13 @@ class PestovDrone(Drone):
                      if asteroid not in self.unavailable_asteroids]
 
         for drone in self.scene.drones:
-            # TODO - Два if-а можно объединить в один, но он получится сложный для восприятия
-            #  поэтому такую проверку можно оформить как метод, возвращающий Tue/False
-            if drone not in self.my_team and drone.target:
-                if drone.distance_to(drone.target) < self.distance_to(drone.target):
-                    for data in distances:
-                        if data[0] == drone.target:
-                            distances.remove(data)
-                            break
+            if self.target and drone.target:
+                distance_to_target = self.target.distance_to(drone.target)
+                self.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
 
-        distances_to_rich = [data for data in distances if data[0].payload >= 100]
+        distances_to_rich = [
+            asteroid_distance_pair for asteroid_distance_pair in distances
+            if asteroid_distance_pair[0].payload >= 100]
 
         if distances_to_rich:
             return (min(distances_to_rich, key=lambda x: x[1]))[0]
@@ -146,18 +149,19 @@ class PestovDrone(Drone):
                      if asteroid not in self.unavailable_asteroids]
 
         for drone in self.scene.drones:
-            # TODO - Два if-а можно объединить в один, но он получится сложный для восприятия
-            #  поэтому такую проверку можно оформить как метод, возвращающий True/False
-            #  Кстати, првоерки эта и выше - очень похожи
-            if drone not in self.my_team and drone.target:
-                if drone.distance_to(drone.target) < self.distance_to(self.target) + self.target.distance_to(drone.target):
-                    for data in distances:
-                        if data[0] == drone.target:
-                            distances.remove(data)
-                            break
+            if self.target and drone.target:
+                distance_to_target = self.distance_to(self.target) + self.target.distance_to(drone.target)
+                self.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
 
         if distances:
             return (min(distances, key=lambda x: x[1]))[0]
+
+    def remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances):
+        if drone not in self.my_team and drone.distance_to(drone.target) < distance_to_target:
+            for asteroid_distance_pair in distances:
+                if asteroid_distance_pair[0] == drone.target:
+                    distances.remove(asteroid_distance_pair)
+                    break
 
     def game_step(self):
         super().game_step()

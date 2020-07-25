@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 # pip install -r requirements.txt
-
 from datetime import datetime
 
 from astrobox.space_field import SpaceField
+from stage_03_harvesters.reaper import ReaperDrone
+from stage_03_harvesters.driller import DrillerDrone
 from pestov import PestovDrone
+
+NUMBER_OF_DRONES = 5
 
 
 class Logger:
@@ -38,13 +41,13 @@ class Logger:
 
 if __name__ == '__main__':
     scene = SpaceField(
-        speed=3,
-        asteroids_count=15,
+        speed=5,
+        asteroids_count=20,
     )
+
     logger = Logger()
     logger.log_init()
-    drones = [PestovDrone(logger=logger) for _ in range(5)]
-    scene.go()
 
-# Первый этап: зачёт!
-# Второй этап: зачёт!
+    team_1 = [PestovDrone(logger=logger) for _ in range(NUMBER_OF_DRONES)]
+    team_2 = [DrillerDrone() for _ in range(NUMBER_OF_DRONES)]
+    scene.go()
