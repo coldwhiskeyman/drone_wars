@@ -82,7 +82,7 @@ class PestovDrone(Drone):
         self.target = self.get_the_closest_asteroid()
         if self.target:
             self.unavailable_asteroids.append(self.target)
-            if self.target.payload < 100:
+            if self.target.payload < 90:
                 self.next_target = self.make_route()
                 if self.next_target:
                     self.unavailable_asteroids.append(self.next_target)
@@ -136,7 +136,7 @@ class PestovDrone(Drone):
 
         distances_to_rich = [
             asteroid_distance_pair for asteroid_distance_pair in distances
-            if asteroid_distance_pair[0].payload >= 100]
+            if asteroid_distance_pair[0].payload >= 90]
 
         if distances_to_rich:
             return (min(distances_to_rich, key=lambda x: x[1]))[0]
