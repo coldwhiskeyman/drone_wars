@@ -51,3 +51,5 @@ if __name__ == '__main__':
     team_1 = [PestovDrone(logger=logger) for _ in range(NUMBER_OF_DRONES)]
     team_2 = [DrillerDrone() for _ in range(NUMBER_OF_DRONES)]
     scene.go()
+
+# Третий этап: зачёт!

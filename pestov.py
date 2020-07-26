@@ -36,6 +36,8 @@ class PestovDrone(Drone):
         """Действие при завершении загрузки элериума"""
         if self.target.payload != 0:
             self.unavailable_asteroids.remove(self.target)
+        # TODO - Если испоьзуются какие-то повторяющиеся числа в коде, и их объединяет принадлежность к чему-то,
+        #  то хорошо бы сделать это число как константа
         if self.payload >= 90:
             self.move_to_mothership()
         elif self.next_target:
