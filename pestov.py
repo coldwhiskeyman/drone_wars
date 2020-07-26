@@ -40,7 +40,12 @@ class PestovDrone(Drone):
             self.move_to_mothership()
         elif self.next_target:
             self.target = self.next_target
-            self.next_target = None
+            if self.target.payload < 90 - self.payload:
+                self.next_target = self.make_route()
+                if self.next_target:
+                    self.unavailable_asteroids.append(self.next_target)
+            else:
+                self.next_target = None
             self.move_at(self.target)
         else:
             try:
