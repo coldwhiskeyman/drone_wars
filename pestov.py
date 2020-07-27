@@ -1,6 +1,8 @@
 from astrobox.core import Drone
 from robogame_engine.geometry import Point
 
+SUFFICIENT_PAYLOAD = 90
+
 
 class CantInterceptException(Exception):
     pass
@@ -28,7 +30,7 @@ class PestovDrone(Drone):
         self.previous_target = Point(self.x, self.y)
         if self.next_target:
             self.turn_to(self.next_target)
-        elif self.payload + asteroid.payload >= 90:
+        elif self.payload + asteroid.payload >= SUFFICIENT_PAYLOAD:
             self.turn_to(self.my_mothership)
         self.load_from(asteroid)
 
@@ -36,11 +38,11 @@ class PestovDrone(Drone):
         """Действие при завершении загрузки элериума"""
         if self.target.payload != 0:
             self.unavailable_asteroids.remove(self.target)
-        if self.payload >= 90:
+        if self.payload >= SUFFICIENT_PAYLOAD:
             self.move_to_mothership()
         elif self.next_target:
             self.target = self.next_target
-            if self.target.payload < 90 - self.payload:
+            if self.target.payload < SUFFICIENT_PAYLOAD - self.payload:
                 self.next_target = self.make_route()
                 if self.next_target:
                     self.unavailable_asteroids.append(self.next_target)
@@ -87,7 +89,7 @@ class PestovDrone(Drone):
         self.target = self.get_the_closest_asteroid()
         if self.target:
             self.unavailable_asteroids.append(self.target)
-            if self.target.payload < 90:
+            if self.target.payload < SUFFICIENT_PAYLOAD:
                 self.next_target = self.make_route()
                 if self.next_target:
                     self.unavailable_asteroids.append(self.next_target)
@@ -141,7 +143,7 @@ class PestovDrone(Drone):
 
         distances_to_rich = [
             asteroid_distance_pair for asteroid_distance_pair in distances
-            if asteroid_distance_pair[0].payload >= 90]
+            if asteroid_distance_pair[0].payload >= SUFFICIENT_PAYLOAD]
 
         if distances_to_rich:
             return (min(distances_to_rich, key=lambda x: x[1]))[0]
