@@ -1,4 +1,4 @@
-from astrobox.core import Drone
+from astrobox.core import Drone, Asteroid
 from robogame_engine.geometry import Point
 
 SUFFICIENT_PAYLOAD = 90
@@ -36,8 +36,9 @@ class PestovDrone(Drone):
 
     def on_load_complete(self):
         """Действие при завершении загрузки элериума"""
-        if self.target.payload != 0:
-            self.unavailable_asteroids.remove(self.target)
+        if isinstance(self.target, Asteroid) and self.target in self.unavailable_asteroids:
+            if self.target.payload != 0:
+                self.unavailable_asteroids.remove(self.target)
         if self.payload >= SUFFICIENT_PAYLOAD:
             self.move_to_mothership()
         elif self.next_target:
@@ -172,14 +173,23 @@ class PestovDrone(Drone):
 
     def game_step(self):
         super().game_step()
-        if self.waiting:
-            if len(self.asteroids) > len(self.unavailable_asteroids):
+        if self.waiting:  # возможные действия, при ожидании на базе
+            for drone in self.scene.drones:  # защита базы, при приближении вражеских дронов
+                if drone not in self.my_team and self.distance_to(drone) <= 500:
+                    self.gun.shot(drone)
+            if len(self.asteroids) > len(self.unavailable_asteroids):  # отправка на добычу, при наличии свободных астероидов
                 self.waiting = False
                 self.try_to_depart()
-        for asteroid in self.asteroids:
+        if self.health <= 30:  # бегство из боя
+            self._logger.log_route(self)
+            self.previous_target = Point(self.x, self.y)
+            if isinstance(self.target, Asteroid) and self.target in self.unavailable_asteroids:
+                self.unavailable_asteroids.remove(self.target)
+            self.move_to_mothership()
+        for asteroid in self.asteroids:  # проверка, не опустели ли астероиды
             if asteroid not in self.unavailable_asteroids and asteroid.payload == 0:
                 self.unavailable_asteroids.append(asteroid)
-        if not self._logger.statistics_written:
+        if not self._logger.statistics_written:  # запись статистики по завершении игры
             for drone in self.my_team:
                 if not drone.waiting:
                     break
