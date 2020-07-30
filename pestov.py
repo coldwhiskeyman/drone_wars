@@ -2,6 +2,7 @@ from astrobox.core import Drone, Asteroid
 from robogame_engine.geometry import Point
 
 SUFFICIENT_PAYLOAD = 90
+DEFENSE_POSITIONS = [Point(100, 350), Point(160, 290), Point(225, 225), Point(290, 160), Point(350, 100)]
 
 
 class CantInterceptException(Exception):
@@ -15,6 +16,7 @@ class PestovDrone(Drone):
     def __init__(self, logger, **kwargs):
         super().__init__(**kwargs)
         self.waiting = False
+        self.guarding = False
         self.previous_target = Point(self.x, self.y)
         self.next_target = None
         self._logger = logger
@@ -82,6 +84,7 @@ class PestovDrone(Drone):
     def move_to_mothership(self):
         """Двигаться на базу"""
         self.target = self.my_mothership
+        self.guarding = False
         self.next_target = None
         self.move_at(self.target)
 
@@ -175,17 +178,30 @@ class PestovDrone(Drone):
         super().game_step()
         if self.waiting:  # возможные действия, при ожидании на базе
             for drone in self.scene.drones:  # защита базы, при приближении вражеских дронов
-                if drone not in self.my_team and self.distance_to(drone) <= 500:
-                    self.gun.shot(drone)
+                if self.check_for_enemy_drones(drone):
+                    self.go_to_defense_position()
             if len(self.asteroids) > len(self.unavailable_asteroids):  # отправка на добычу, при наличии свободных астероидов
                 self.waiting = False
                 self.try_to_depart()
+
+        if self.target in DEFENSE_POSITIONS and self.near(self.target) and not self.guarding:  # режим защиты базы, после выхода на позицию
+            self.guarding = True
+        if self.guarding:  # атака вражеских дронов в радиусе поражения
+            for drone in self.scene.drones:
+                if self.check_for_enemy_drones(drone):
+                    self.turn_to(drone)
+                    self.gun.shot(drone)
+                    break
+            else:
+                self.move_to_mothership()
+
         if self.health <= 30:  # бегство из боя
             self._logger.log_route(self)
             self.previous_target = Point(self.x, self.y)
             if isinstance(self.target, Asteroid) and self.target in self.unavailable_asteroids:
                 self.unavailable_asteroids.remove(self.target)
             self.move_to_mothership()
+            
         for asteroid in self.asteroids:  # проверка, не опустели ли астероиды
             if asteroid not in self.unavailable_asteroids and asteroid.payload == 0:
                 self.unavailable_asteroids.append(asteroid)
@@ -195,3 +211,15 @@ class PestovDrone(Drone):
                     break
             else:
                 self._logger.write_statistics()
+
+    def go_to_defense_position(self):
+        """Выход на позицию для защиты базы"""
+        for point in DEFENSE_POSITIONS:
+            if any([drone.near(point) or (drone.target == point and drone != self) for drone in self.my_team]):
+                continue
+            else:
+                self.target = point
+                self.move_at(self.target)
+
+    def check_for_enemy_drones(self, drone):
+        return drone not in self.my_team and self.distance_to(drone) <= 500 and drone.is_alive
