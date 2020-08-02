@@ -131,7 +131,7 @@ class PestovDrone(Drone):
                 self.move_to_the_closest_asteroid()
                 drone_distance_pair[0]._logger.log_route(drone_distance_pair[0])
                 coords = Point(drone_distance_pair[0].x, drone_distance_pair[0].y)
-                drone_distance_pair[0].previous_target = Point(self.x, self.y)
+                drone_distance_pair[0].previous_target = coords
                 drone_distance_pair[0].move_to_the_closest_asteroid()
                 break
         else:
@@ -232,20 +232,20 @@ class PestovDrone(Drone):
             self.attack_mode()
         elif self.maneuvering and not self.next_target:
             self.barrel_roll()
-        elif self.maneuvering and not self.check_for_attacking_ally_drones:
-            self.offensive = True
+        elif self.maneuvering and not self.check_for_attacking_ally_drones():
             self.maneuvering = False
             self.next_target = None
+        elif self.maneuvering:
+            pass
         elif self.target.is_empty:
             self.move_to_mothership()
         else:
             enemy = self.check_for_enemy_drones()
             ally = self.check_for_attacking_ally_drones()
-            if enemy or self.check_target_base() and not ally:
+            if (enemy or self.check_target_base()) and not ally:
                 self.attacking = True
                 self.stop()
-            elif enemy or self.check_target_base() and ally:
-                self.offensive = False
+            elif (enemy or self.check_target_base()) and ally:
                 self.maneuvering = True
             else:
                 self.move_at(self.target)
@@ -269,7 +269,8 @@ class PestovDrone(Drone):
     def check_for_attacking_ally_drones(self):
         """проверка на союзных дронов в режиме атаки в небольшом радиусе"""
         for drone in self.scene.drones:
-            if drone != self and drone in self.my_team and self.distance_to(drone) <= 100 and drone.is_alive and drone.attacking:
+            if drone != self and drone in self.my_team and self.distance_to(drone) <= 100 and\
+                    drone.is_alive and drone.attacking:
                 return drone
 
     def check_for_enemy_drones(self):
