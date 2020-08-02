@@ -49,6 +49,10 @@ class PestovDrone(Drone):
         if self.payload >= SUFFICIENT_PAYLOAD:
             self.move_to_mothership()
         elif self.next_target:
+            # TODO - Есть такой приём, помогающий понять логику алгоритма
+            #  Если в ветке if содержится нелинейная логика или циклы, то стоит вынести код этой ветки
+            #  в отделный метод с понятным неймингом
+            #  Тогда не придётся вникать в детали, чтобы понять алгоритм
             self.target = self.next_target
             if self.target.payload < SUFFICIENT_PAYLOAD - self.payload:
                 self.next_target = self.make_route()

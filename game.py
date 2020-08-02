@@ -42,9 +42,9 @@ class Logger:
 
 if __name__ == '__main__':
     scene = SpaceField(
-        field=(900, 900),
+        field=(1200, 900),
         speed=5,
-        asteroids_count=27,
+        asteroids_count=17,
         can_fight=True,
     )
 
@@ -52,9 +52,11 @@ if __name__ == '__main__':
     logger.log_init()
 
     team_1 = [PestovDrone(logger=logger) for _ in range(NUMBER_OF_DRONES)]
-    team_2 = [ReaperDrone() for _ in range(NUMBER_OF_DRONES)]
-    team_3 = [DrillerDrone() for _ in range(NUMBER_OF_DRONES)]
+    # team_2 = [ReaperDrone() for _ in range(NUMBER_OF_DRONES)]
+    # team_3 = [DrillerDrone() for _ in range(NUMBER_OF_DRONES)]
     team_4 = [DevastatorDrone() for _ in range(NUMBER_OF_DRONES)]
     scene.go()
 
 # Третий этап: зачёт!
+# TODO - попробуй выиграть против одних девастаторов
+#  статистику можно убрать или расширить (например сколько выпущено снарядов)
