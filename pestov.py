@@ -117,10 +117,8 @@ class PestovDrone(Drone):
         distances = {}
         for asteroid in self.unavailable_asteroids:
             distance = self.distance_to(asteroid)
-            for drone in self.my_team:
-                if drone != self and\
-                        drone.target == asteroid and\
-                        drone.distance_to(asteroid) > distance:
+            for drone in self.teammates:
+                if drone.target == asteroid and drone.distance_to(asteroid) > distance:
                     distances[asteroid] = [drone, distance]
         for asteroid, drone_distance_pair in distances.items():
             closest_drone = min(distances.values(), key=lambda x: x[1])
@@ -195,6 +193,12 @@ class PestovDrone(Drone):
                         self.offensive = True
                         self.move_at(mothership)
 
+        for mothership in self.scene.motherships:  # разграбление вражеской базы
+            if mothership != self.my_mothership and self.near(mothership):
+                self.offensive = False
+                self.load_from(mothership)
+
+
         if self.health <= 40:
             self.retreat()
 
@@ -219,7 +223,7 @@ class PestovDrone(Drone):
     def go_to_defense_position(self):
         """Выход на позицию для защиты базы"""
         for point in DEFENSE_POSITIONS:
-            if any([drone.near(point) or (drone.target == point and drone != self) for drone in self.my_team]):
+            if any([drone.near(point) or drone.target == point for drone in self.teammates]):
                 continue
             else:
                 self.waiting = False
@@ -238,6 +242,8 @@ class PestovDrone(Drone):
         elif self.maneuvering:
             pass
         elif self.target.is_empty:
+            self.attacking = False
+            self.offensive = False
             self.move_to_mothership()
         else:
             enemy = self.check_for_enemy_drones()
@@ -269,8 +275,7 @@ class PestovDrone(Drone):
     def check_for_attacking_ally_drones(self):
         """проверка на союзных дронов в режиме атаки в небольшом радиусе"""
         for drone in self.scene.drones:
-            if drone != self and drone in self.my_team and self.distance_to(drone) <= 100 and\
-                    drone.is_alive and drone.attacking:
+            if drone in self.teammates and self.distance_to(drone) <= 100 and drone.is_alive and drone.attacking:
                 return drone
 
     def check_for_enemy_drones(self):
@@ -280,7 +285,7 @@ class PestovDrone(Drone):
                 return drone
 
     def check_target_base(self):
-        return self.distance_to(self.target) <= 500 and self.target.is_alive
+        return self.target != self.my_mothership and self.distance_to(self.target) <= 500 and self.target.is_alive
 
     def guarding_mode(self):
         """атака вражеских дронов в радиусе поражения"""
@@ -289,6 +294,7 @@ class PestovDrone(Drone):
             self.turn_to(enemy)
             self.gun.shot(enemy)
         else:
+            self.guarding = False
             self.move_to_mothership()
 
     def retreat(self):
