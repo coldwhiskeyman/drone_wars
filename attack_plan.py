@@ -3,14 +3,27 @@ from math import ceil
 from robogame_engine.geometry import Point, Vector, normalise_angle
 
 
+def rebase_drone_in_formation(point, vector):
+    return Point(point.x - vector.x * 5, point.y - vector.y * 5)
+
+
 class AttackPlan:
-    def __init__(self, my_mothership):
-        self.my_mothership = my_mothership
+    def __init__(self):
+        self.my_mothership = None
         self.target_mothership = None
         self.attack_stage = 0
         self.stages_number = 0
         self.attack_positions = []
         self.advance_distance = None
+
+    def set_mothership(self, mothership):
+        if not self.my_mothership:
+            self.my_mothership = mothership
+
+    def start_attack(self, target_mothership):
+        self.target_mothership = target_mothership
+        self.calculate_attack_stages()
+        self.create_attack_positions()
 
     def go_to_attack_position(self, soldier):
         """выход на позицию для атаки"""
@@ -25,7 +38,7 @@ class AttackPlan:
     def calculate_attack_stages(self):
         """расчет количества этапов наступления"""
         distance = self.my_mothership.distance_to(self.target_mothership)
-        stages = int(ceil(distance / 500))
+        stages = int(ceil(distance / 400))
         x = (self.target_mothership.x - self.my_mothership.x) / stages
         y = (self.target_mothership.y - self.my_mothership.y) / stages
         self.advance_distance = Vector(x, y)
@@ -42,11 +55,22 @@ class AttackPlan:
             wing_angle = normalise_angle(main_vector.direction + angle)
             wing_vector = Vector.from_direction(wing_angle, 100)
             point1 = Point(central_position.x + wing_vector.x, central_position.y + wing_vector.y)
+            if point1.x <= 0 or point1.y <= 0:
+                point1 = rebase_drone_in_formation(point1, wing_vector)
             self.attack_positions.append(point1)
             point2 = Point(central_position.x + (wing_vector * 2).x, central_position.y + (wing_vector * 2).y)
+            if point2.x <= 0 or point2.y <= 0:
+                point2 = rebase_drone_in_formation(point2, wing_vector)
             self.attack_positions.append(point2)
 
     def advance_to_next_position(self):
         """продолжение наступления"""
         self.attack_stage += 1
         self.create_attack_positions()
+
+    def abort_attack(self):
+        self.target_mothership = None
+        self.attack_stage = 0
+        self.stages_number = 0
+        self.attack_positions = []
+        self.advance_distance = None
