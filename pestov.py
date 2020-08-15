@@ -14,6 +14,7 @@ class CantInterceptException(Exception):
 class PestovDrone(Drone):
     my_team = []
     unavailable_asteroids = []
+    attack_distance = 1000
 
     def __init__(self, logger, attack_plan, **kwargs):
         super().__init__(**kwargs)
@@ -204,7 +205,7 @@ class PestovDrone(Drone):
                         self.attack_plan.start_attack(mothership)
             elif self.target not in self.attack_plan.attack_positions:
                 self.attack_plan.go_to_attack_position(self)
-            elif self.near(self.target) and self.check_for_enemy_drones():
+            elif self.near(self.target) and (self.check_for_enemy_drones() or self.check_target_base()):
                 self.attacking = True
 
             for drone in self.my_team:
@@ -220,8 +221,8 @@ class PestovDrone(Drone):
         for drone in self.my_team:
             if drone.offensive:
                 counter += 1
-        if counter < ceil(float(len(self.my_team)) / 2):
-            self.attack_plan.abort_attack()
+        # if counter < ceil(float(len(self.my_team)) / 2):
+        #     self.attack_plan.abort_attack()
 
         if not self.enemies_alive():
             self.offensive = False
@@ -257,6 +258,7 @@ class PestovDrone(Drone):
             self.turn_to(enemy)
             self.gun.shot(enemy)
         elif self.check_target_base():
+            self.__class__.attack_distance = 600            
             self.turn_to(self.attack_plan.target_mothership)
             self.gun.shot(self.attack_plan.target_mothership)
         else:
@@ -265,12 +267,13 @@ class PestovDrone(Drone):
     def check_for_enemy_drones(self):
         """проверка на вражеских дронов в радиусе поражения"""
         for drone in self.scene.drones:
-            if drone not in self.my_team and self.distance_to(drone) <= 500 and drone.is_alive:
+            if drone not in self.my_team and self.distance_to(drone) <= self.__class__.attack_distance and drone.is_alive:
                 return drone
 
     def check_target_base(self):
         if self.attack_plan.target_mothership:
-            return self.distance_to(self.attack_plan.target_mothership) <= 500
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            return self.distance_to(self.attack_plan.target_mothership) <= self.__class__.attack_distance
         else:
             return False
 
