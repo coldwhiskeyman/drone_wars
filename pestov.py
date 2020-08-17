@@ -33,18 +33,20 @@ class PestovDrone(Drone):
     def on_born(self):
         """Действие при активации дрона"""
         self.my_team.append(self)
-        self.change_role('fighter')
+        self.change_role('harvester')
         self.attack_plan.set_mothership(self.my_mothership)
+        self.role.make_route(100)
+        self.move_at(self.next_target)
 
     def change_role(self, role):
         if role == 'fighter':
-            self.role = Fighter
+            self.role = Fighter()
             self.offensive = True
             if self in self.harvesters:
                 self.harvesters.remove(self)
             self.fighters.append(self)
         elif role == 'harvester':
-            self.role = Harvester
+            self.role = Harvester()
             self.offensive = False
             if self in self.fighters:
                 self.fighters.remove(self)
@@ -65,7 +67,7 @@ class PestovDrone(Drone):
             raise RoleError('on_load_complete: Только сборщик может собирать ресурсы')
 
     def make_route(self, max_payload):
-        if self.role == Harvester:
+        if isinstance(self.role, Harvester):
             self.role.make_route(self, max_payload)
         else:
             raise RoleError('make_route: Только сборщик может собирать ресурсы')
@@ -109,7 +111,7 @@ class PestovDrone(Drone):
 
     def move_to_the_closest_asteroid(self):
         """Двигаться к ближайшему астероиду"""
-        if self.role == Harvester:
+        if isinstance(self.role, Harvester):
             self.role.move_to_the_closest_asteroid(self)
         else:
             raise RoleError('move_to_the_closest_asteroid: Только сборщик может собирать ресурсы')
@@ -129,7 +131,7 @@ class PestovDrone(Drone):
         Выбор ближайшего к дрону астероида.
         В первую очередь выбираются богатые элериумом астероиды.
         """
-        if self.role == Harvester:
+        if isinstance(self.role, Harvester):
             self.role.get_the_closest_asteroid(self)
         else:
             raise RoleError('get_the_closest_asteroid: Только сборщик может собирать ресурсы')
@@ -142,7 +144,7 @@ class PestovDrone(Drone):
             raise RoleError('get_next_asteroid: Только сборщик может собирать ресурсы')
 
     def remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances):
-        if self.role == Harvester:
+        if isinstance(self.role, Harvester):
             self.role.remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances)
         else:
             raise RoleError('remove_asteroid_occupied_by_enemy: Только сборщик может собирать ресурсы')

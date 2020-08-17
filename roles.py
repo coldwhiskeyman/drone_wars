@@ -49,6 +49,9 @@ class Fighter(Role):
 class Harvester(Role):
     @staticmethod
     def on_stop_at_asteroid(self, asteroid):
+        # TODO - У статических методов не должно быть параметра self по умолчанию)
+        #  т.е. такие методы принимают ровно столько параметров, сколько указано в скобках
+        #  Если в функции написано  (self, asteroid) - значит она ждёт два параметра
         """Действие при встрече с астероидом"""
         self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
