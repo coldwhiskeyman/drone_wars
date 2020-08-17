@@ -67,7 +67,6 @@ class AttackPlan:
         """продолжение наступления"""
         self.attack_stage += 1
         self.create_attack_positions()
-        print(self.attack_stage)
 
     def abort_attack(self):
         self.target_mothership = None
