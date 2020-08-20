@@ -12,7 +12,6 @@ class AttackPlan:
         self.my_mothership = None
         self.target_mothership = None
         self.attack_stage = 0
-        self.stages_number = 0
         self.attack_positions = []
         self.advance_distance = None
 
@@ -42,7 +41,6 @@ class AttackPlan:
         x = (self.target_mothership.x - self.my_mothership.x) / stages
         y = (self.target_mothership.y - self.my_mothership.y) / stages
         self.advance_distance = Vector(x, y)
-        self.stages_number = stages
 
     def create_attack_positions(self):
         """создание позиций для атаки"""
@@ -68,9 +66,11 @@ class AttackPlan:
         self.attack_stage += 1
         self.create_attack_positions()
 
-    def abort_attack(self):
+    def abort_attack(self, fighters):
         self.target_mothership = None
         self.attack_stage = 0
-        self.stages_number = 0
         self.attack_positions = []
         self.advance_distance = None
+        for drone in fighters:
+            if drone.offensive:
+                drone.retreat()
