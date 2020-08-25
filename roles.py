@@ -17,9 +17,6 @@ class Fighter(Role):
     def __init__(self, drone):
         super().__init__(drone)
 
-    def attack_mission(self):
-        pass
-
     def attack_mode(self):
         """атака вражеских дронов или базы в радиусе поражения"""
         enemy = self.unit.check_for_enemy_drones()
