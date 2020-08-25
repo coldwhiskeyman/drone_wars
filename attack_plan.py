@@ -26,13 +26,17 @@ class AttackPlan:
 
     def go_to_attack_position(self, soldier):
         """выход на позицию для атаки"""
-        for point in self.attack_positions:
-            if any([drone.near(point) or drone.target == point for drone in soldier.teammates]):
-                continue
-            else:
-                soldier.waiting = False
-                soldier.target = point
-                soldier.move_at(soldier.target)
+        # for point in self.attack_positions:
+        #     if any([drone.target == point for drone in soldier.teammates]):
+        #         continue
+        #     else:
+        #         soldier.target = point
+        #         soldier.move_at(soldier.target)
+        if self.attack_positions:
+            index = soldier.__class__.fighters.index(soldier)
+            soldier.target = self.attack_positions[index]
+            soldier.move_at(soldier.target)
+
 
     def calculate_attack_stages(self):
         """расчет количества этапов наступления"""

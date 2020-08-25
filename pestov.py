@@ -18,7 +18,7 @@ class PestovDrone(Drone):
     harvesters = []
     unavailable_asteroids = []
 
-    def __init__(self, logger, attack_plan, **kwargs):
+    def __init__(self, attack_plan, **kwargs):
         super().__init__(**kwargs)
         self.role = None
         self.attack_plan = attack_plan
@@ -27,7 +27,6 @@ class PestovDrone(Drone):
         self.attacking = False
         self.previous_target = Point(self.x, self.y)
         self.next_target = None
-        self._logger = logger
 
     def on_born(self):
         """Действие при активации дрона"""
@@ -39,12 +38,14 @@ class PestovDrone(Drone):
         if role == 'fighter':
             self.role = Fighter(self)
             self.offensive = True
+            self.waiting = False
             if self in self.__class__.harvesters:
                 self.__class__.harvesters.remove(self)
             self.__class__.fighters.append(self)
         # elif role == 'harvester':
         #     self.role = Harvester(self)
         #     self.offensive = False
+        #     self.waiting = True
         #     if self in self.__class__.fighters:
         #         self.__class__.fighters.remove(self)
         #     self.__class__.harvesters.append(self)
@@ -55,7 +56,7 @@ class PestovDrone(Drone):
     #         self.role.on_stop_at_asteroid(asteroid)
     #     else:
     #         pass
-    #
+
     # def on_load_complete(self):
     #     """Действие при завершении загрузки элериума"""
     #     if isinstance(self.role, Harvester):
@@ -72,7 +73,6 @@ class PestovDrone(Drone):
     def on_stop_at_mothership(self, mothership):
         """Действие при возвращении на базу"""
         self.turn_to(self.previous_target)  # да, бессмысленно, но главное, что развернется на ~180 градусов
-        self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
         # if isinstance(self.role, Harvester):
         #     if not self.is_empty:
@@ -82,6 +82,8 @@ class PestovDrone(Drone):
         if isinstance(self.role, Fighter):
             if self.enemies_alive():
                 self.offensive = True
+            else:
+                self.change_role('harvester')
 
     # def on_unload_complete(self):
     #     """Действие при завершении разгрузки дрона"""
@@ -96,9 +98,14 @@ class PestovDrone(Drone):
     #         self.role.try_to_depart()
     #     else:
     #         raise RoleError('try_to_depart: Только сборщик может собирать ресурсы')
-    #
-    # def on_wake_up(self):
-    #     self.move_to_the_closest_asteroid()
+
+    def on_wake_up(self):  # совершенно не понимаю, в какой момент вызывается этот метод, но он явно важен
+        # if isinstance(self.role, Harvester):
+        #     self.try_to_depart()
+        if isinstance(self.role, Fighter):
+            self.offensive = True
+            if not self.is_moving:
+                self.attack_plan.go_to_attack_position(self)
 
     def move_to_mothership(self):
         """Двигаться на базу"""
@@ -122,7 +129,7 @@ class PestovDrone(Drone):
     #         self.role.intercept_asteroid()
     #     else:
     #         raise RoleError('intercept_asteroid: Только сборщик может собирать ресурсы')
-    #
+
     # def get_the_closest_asteroid(self):
     #     """
     #     Выбор ближайшего к дрону астероида.
@@ -181,11 +188,9 @@ class PestovDrone(Drone):
                         if mothership != self.my_mothership:
                             self.attack_plan.start_attack(mothership)
                 elif self.target not in self.attack_plan.attack_positions or not self.near(self.target):
-                    self.attack_plan.go_to_attack_position(self)
-                elif self.near(self.target) and (self.check_for_enemy_drones() or self.check_target_base()):
+                    self.attack_plan.go_to_attack_position(self)  # иногда дрон не выполняет эту команду
+                elif any([self.near(point) for point in self.attack_plan.attack_positions]) and (self.check_for_enemy_drones() or self.check_target_base()):
                     self.attacking = True
-                elif not self.is_moving:
-                    self.attack_plan.go_to_attack_position(self)
 
                 for drone in self.__class__.fighters:
                     if self.target:
@@ -198,12 +203,16 @@ class PestovDrone(Drone):
             else:
                 if self.health == 100:
                     self.offensive = True
-                if not self.attack_plan.target_mothership and all([drone.health >= 70 for drone in self.__class__.fighters]):
-                    for mothership in self.scene.motherships:
-                        if mothership != self.my_mothership:
-                            self.attack_plan.start_attack(mothership)
+                elif not self.is_moving and self.health >= 80:
+                    self.offensive = True
+                else:
+                    self.move_to_mothership()
 
-            if self.attack_plan.target_mothership:
+            if not self.attack_plan.target_mothership and all([drone.health >= 80 for drone in self.__class__.fighters]):
+                for mothership in self.scene.motherships:
+                    if mothership != self.my_mothership:
+                        self.attack_plan.start_attack(mothership)
+            elif self.attack_plan.target_mothership:
                 counter = 0
                 for drone in self.__class__.fighters:
                     if drone.offensive:
@@ -211,11 +220,22 @@ class PestovDrone(Drone):
                 if counter < ceil(float(len(self.__class__.fighters)) / 2):
                     self.attack_plan.abort_attack(self.__class__.fighters)
 
-            if not self.enemies_alive():
-                self.change_role('harvester')
-
             if self.attacking:
                 self.attack_mode()
+
+            if not self.is_moving and self.target:
+                if self.near(self.target) and self.offensive:
+                    pass
+                elif self.near(self.target):
+                    self.offensive = True
+                elif self.near(self.my_mothership) or self.health >= 80:
+                    self.offensive = True
+                    self.attack_plan.go_to_attack_position(self)
+                else:
+                    self.move_to_mothership()
+
+            # if not self.enemies_alive():
+            #     self.change_role('harvester')
 
         # if not self._logger.statistics_written:  # запись статистики по завершении игры
         #     for drone in [drone for drone in self.scene.drones if drone not in self.my_team]:
@@ -234,6 +254,13 @@ class PestovDrone(Drone):
                     return True
             else:
                 return False
+
+    def attack_mission(self):
+        """Отправление в бой"""
+        if isinstance(self.role, Fighter):
+            self.role.attack_mission()
+        else:
+            raise RoleError('attack_mode: Только истребитель может участвовать в бою')
 
     def attack_mode(self):
         """атака вражеских дронов или базы в радиусе поражения"""
@@ -257,7 +284,6 @@ class PestovDrone(Drone):
 
     def retreat(self):
         """бегство из боя"""
-        self._logger.log_route(self)
         self.previous_target = Point(self.x, self.y)
         self.offensive = False
         self.attacking = False

@@ -17,6 +17,9 @@ class Fighter(Role):
     def __init__(self, drone):
         super().__init__(drone)
 
+    def attack_mission(self):
+        pass
+
     def attack_mode(self):
         """атака вражеских дронов или базы в радиусе поражения"""
         enemy = self.unit.check_for_enemy_drones()
@@ -52,7 +55,6 @@ class Harvester(Role):
 
     def on_stop_at_asteroid(self, asteroid):
         """Действие при встрече с астероидом"""
-        self.unit._logger.log_route(self.unit)
         self.unit.previous_target = Point(self.unit.x, self.unit.y)
         if self.unit.next_target:
             self.unit.turn_to(self.unit.next_target)
@@ -120,11 +122,9 @@ class Harvester(Role):
         for asteroid, drone_distance_pair in distances.items():
             closest_drone = min(distances.values(), key=lambda x: x[1])
             if drone_distance_pair == closest_drone:
-                self.unit._logger.log_route(self.unit)
                 self.unit.previous_target = Point(self.unit.x, self.unit.y)
                 self.unit.__class__.unavailable_asteroids.remove(asteroid)
                 self.unit.move_to_the_closest_asteroid()
-                drone_distance_pair[0]._logger.log_route(drone_distance_pair[0])
                 coords = Point(drone_distance_pair[0].x, drone_distance_pair[0].y)
                 drone_distance_pair[0].previous_target = coords
                 drone_distance_pair[0].move_to_the_closest_asteroid()
@@ -143,7 +143,7 @@ class Harvester(Role):
         for drone in self.unit.scene.drones:
             if self.unit.target and drone.target:
                 distance_to_target = self.unit.target.distance_to(drone.target)
-                self.unit.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
+                self.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
 
         distances_to_rich = [
             asteroid_distance_pair for asteroid_distance_pair in distances
@@ -163,7 +163,7 @@ class Harvester(Role):
             if self.unit.target and drone.target:
                 distance_to_target = self.unit.distance_to(self.unit.target) + self.unit.target.distance_to(
                     drone.target)
-                self.unit.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
+                self.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
 
         if distances:
             return (min(distances, key=lambda x: x[1]))[0]
