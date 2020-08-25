@@ -83,6 +83,8 @@ class PestovDrone(Drone):
             if self.enemies_alive():
                 self.offensive = True
             else:
+                # TODO - для переключения в др роль необходимо посмнить как она пишется
+                #  чтобы не держать такую информацию, можно сдлеать константу и тогда pycharm сам подскажет написание
                 self.change_role('harvester')
 
     def on_unload_complete(self):
@@ -147,6 +149,7 @@ class PestovDrone(Drone):
         else:
             raise RoleError('get_next_asteroid: Только сборщик может собирать ресурсы')
 
+    # TODO - Убирайте неиспользуемый код. Если что можно в коммитах посмотреть
     # def remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances):
     #     if isinstance(self.role, Harvester):
     #         self.role.remove_asteroid_occupied_by_enemy(drone, distance_to_target, distances)
