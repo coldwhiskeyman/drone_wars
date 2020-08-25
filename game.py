@@ -28,7 +28,3 @@ if __name__ == '__main__':
     # team_3 = [DrillerDrone() for _ in range(NUMBER_OF_DRONES)]
     team_4 = [DevastatorDrone() for _ in range(NUMBER_OF_DRONES)]
     scene.go()
-
-# Третий этап: зачёт!
-# TODO - попробуй выиграть против одних девастаторов
-#  статистику можно убрать или расширить (например сколько выпущено снарядов)

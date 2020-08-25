@@ -134,8 +134,8 @@ class Harvester(Role):
         Выбор ближайшего к дрону астероида.
         В первую очередь выбираются богатые элериумом астероиды.
         """
-        distances = [(asteroid, self.unit.distance_to(asteroid)) for asteroid in self.unit.asteroids
-                     if asteroid not in self.unit.__class__.unavailable_asteroids]
+
+        distances = self.get_distances()
 
         for drone in self.unit.scene.drones:
             if self.unit.target and drone.target:
@@ -153,8 +153,7 @@ class Harvester(Role):
 
     def get_next_asteroid(self):
         """Выбрать ближайший к текущей цели астероид"""
-        distances = [(asteroid, self.unit.target.distance_to(asteroid)) for asteroid in self.unit.asteroids
-                     if asteroid not in self.unit.__class__.unavailable_asteroids]
+        distances = self.get_distances()
 
         for drone in self.unit.scene.drones:
             if self.unit.target and drone.target:
@@ -164,6 +163,19 @@ class Harvester(Role):
 
         if distances:
             return (min(distances, key=lambda x: x[1]))[0]
+
+    def get_distances(self):
+        distances_to_asteroids = [(asteroid, self.unit.distance_to(asteroid)) for asteroid in self.unit.asteroids
+                                  if asteroid not in self.unit.__class__.unavailable_asteroids]
+
+        distances_to_dead_enemies = [(drone, self.unit.distance_to(drone)) for drone in self.unit.scene.drones
+                                     if
+                                     drone not in self.unit.__class__.my_team and not drone.is_alive and not drone.is_empty]
+
+        distances_to_motherships = [(base, self.unit.distance_to(base)) for base in self.unit.scene.motherships
+                                    if base != self.unit.my_mothership and not base.is_alive and not base.is_empty]
+
+        return distances_to_asteroids + distances_to_dead_enemies + distances_to_motherships
 
     def remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances):
         if drone not in self.unit.__class__.my_team and drone.distance_to(drone.target) < distance_to_target:
