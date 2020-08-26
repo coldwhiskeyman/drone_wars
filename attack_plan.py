@@ -3,10 +3,6 @@ from math import ceil
 from robogame_engine.geometry import Point, Vector, normalise_angle
 
 
-def rebase_drone_in_formation(point, vector):
-    return Point(point.x - vector.x * 5, point.y - vector.y * 5)
-
-
 class AttackPlan:
     def __init__(self):
         self.my_mothership = None
@@ -25,13 +21,6 @@ class AttackPlan:
         self.create_attack_positions()
 
     def go_to_attack_position(self, soldier):
-        """выход на позицию для атаки"""
-        # for point in self.attack_positions:
-        #     if any([drone.target == point for drone in soldier.teammates]):
-        #         continue
-        #     else:
-        #         soldier.target = point
-        #         soldier.move_at(soldier.target)
         if self.attack_positions:
             index = soldier.__class__.fighters.index(soldier)
             soldier.target = self.attack_positions[index]
@@ -58,12 +47,16 @@ class AttackPlan:
             wing_vector = Vector.from_direction(wing_angle, 100)
             point1 = Point(central_position.x + wing_vector.x, central_position.y + wing_vector.y)
             if point1.x <= 0 or point1.y <= 0:
-                point1 = rebase_drone_in_formation(point1, wing_vector)
+                point1 = self.rebase_drone_in_formation(point1, wing_vector)
             self.attack_positions.append(point1)
             point2 = Point(central_position.x + (wing_vector * 2).x, central_position.y + (wing_vector * 2).y)
             if point2.x <= 0 or point2.y <= 0:
-                point2 = rebase_drone_in_formation(point2, wing_vector)
+                point2 = self.rebase_drone_in_formation(point2, wing_vector)
             self.attack_positions.append(point2)
+
+    @staticmethod
+    def rebase_drone_in_formation(point, vector):
+        return Point(point.x - vector.x * 5, point.y - vector.y * 5)
 
     def advance_to_next_position(self):
         """продолжение наступления"""
