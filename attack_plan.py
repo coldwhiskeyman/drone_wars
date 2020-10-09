@@ -4,16 +4,21 @@ from robogame_engine.geometry import Point, Vector, normalise_angle
 
 
 class AttackPlan:
+
     def __init__(self):
         self.my_mothership = None
+        self.mothership_position_coefficients = None
         self.target_mothership = None
         self.attack_stage = 0
         self.attack_positions = []
+        self.defense_positions = []
         self.advance_distance = None
 
     def set_mothership(self, mothership):
         if not self.my_mothership:
             self.my_mothership = mothership
+            self.mothership_position_coefficients = self.check_base_position()
+            self.create_defense_positions()
 
     def start_attack(self, target_mothership):
         self.target_mothership = target_mothership
@@ -26,6 +31,31 @@ class AttackPlan:
             soldier.target = self.attack_positions[index]
             soldier.move_at(soldier.target)
 
+    def go_to_defense_position(self, soldier):
+        if self.defense_positions:
+            index = soldier.__class__.guardians.index(soldier)
+            soldier.target = self.defense_positions[index]
+            soldier.move_at(soldier.target)
+
+    def check_base_position(self):
+        if self.my_mothership.x == 90:
+            if self.my_mothership.y == 90:
+                return 1, 1
+            else:
+                return 1, -1
+        else:
+            if self.my_mothership.y == 90:
+                return -1, 1
+            else:
+                return -1, -1
+
+    def create_defense_positions(self):
+        point = Point(self.my_mothership.x + (150 * self.mothership_position_coefficients[0]),
+                      self.my_mothership.y + (50 * self.mothership_position_coefficients[1]))
+        self.defense_positions.append(point)
+        point = Point(self.my_mothership.x + (50 * self.mothership_position_coefficients[0]),
+                      self.my_mothership.y + (150 * self.mothership_position_coefficients[1]))
+        self.defense_positions.append(point)
 
     def calculate_attack_stages(self):
         """расчет количества этапов наступления"""
@@ -46,11 +76,11 @@ class AttackPlan:
             wing_angle = normalise_angle(main_vector.direction + angle)
             wing_vector = Vector.from_direction(wing_angle, 100)
             point1 = Point(central_position.x + wing_vector.x, central_position.y + wing_vector.y)
-            if point1.x <= 0 or point1.y <= 0:
+            if not 0 <= point1.x <= 1200 or not 0 <= point1.y <= 1200:
                 point1 = self.rebase_drone_in_formation(point1, wing_vector)
             self.attack_positions.append(point1)
             point2 = Point(central_position.x + (wing_vector * 2).x, central_position.y + (wing_vector * 2).y)
-            if point2.x <= 0 or point2.y <= 0:
+            if not 0 <= point2.x <= 1200 or not 0 <= point2.y <= 1200:
                 point2 = self.rebase_drone_in_formation(point2, wing_vector)
             self.attack_positions.append(point2)
 

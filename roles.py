@@ -2,6 +2,7 @@ from robogame_engine.geometry import Point
 from astrobox.core import Asteroid
 
 SUFFICIENT_PAYLOAD = 90
+SHOT_DISTANCE = 650
 
 
 class CantInterceptException(Exception):
@@ -32,13 +33,14 @@ class Fighter(Role):
     def check_for_enemy_drones(self):
         """проверка на вражеских дронов в радиусе поражения"""
         for drone in self.unit.scene.drones:
-            if drone not in self.unit.__class__.my_team and self.unit.distance_to(drone) <= 600 and drone.is_alive:
+            if drone not in self.unit.__class__.my_team and self.unit.distance_to(
+                    drone) <= SHOT_DISTANCE and drone.is_alive:
                 return drone
 
     def check_target_base(self):
         if self.unit.attack_plan.target_mothership:
             if self.unit.attack_plan.target_mothership.is_alive:
-                return self.unit.distance_to(self.unit.attack_plan.target_mothership) <= 600
+                return self.unit.distance_to(self.unit.attack_plan.target_mothership) <= SHOT_DISTANCE
             else:
                 self.unit.attack_plan.abort_attack(self.unit.__class__.fighters)
                 return False
@@ -69,17 +71,17 @@ class Harvester(Role):
         elif self.unit.next_target:
             self.unit.target = self.unit.next_target
             max_payload = SUFFICIENT_PAYLOAD - self.unit.payload
-            self.unit.make_route(max_payload)
+            self.make_route(max_payload)
             self.unit.move_at(self.unit.target)
         else:
             try:
-                self.unit.intercept_asteroid()
+                self.intercept_asteroid()
             except CantInterceptException:
-                self.unit.move_to_the_closest_asteroid()
+                self.move_to_the_closest_asteroid()
 
     def make_route(self, max_payload):
         if self.unit.target.payload < max_payload:
-            self.unit.next_target = self.unit.get_next_asteroid()
+            self.unit.next_target = self.get_next_asteroid()
             if self.unit.next_target:
                 self.unit.__class__.unavailable_asteroids.append(self.unit.next_target)
         else:
@@ -87,16 +89,16 @@ class Harvester(Role):
 
     def try_to_depart(self):
         """Отправление с базы"""
-        self.unit.move_to_the_closest_asteroid()
+        self.move_to_the_closest_asteroid()
         if self.unit.target == self.unit.my_mothership:
             self.unit.waiting = True
 
     def move_to_the_closest_asteroid(self):
         """Двигаться к ближайшему астероиду"""
-        self.unit.target = self.unit.get_the_closest_asteroid()
+        self.unit.target = self.get_the_closest_asteroid()
         if self.unit.target:
             self.unit.__class__.unavailable_asteroids.append(self.unit.target)
-            self.unit.make_route(SUFFICIENT_PAYLOAD)
+            self.make_route(SUFFICIENT_PAYLOAD)
             self.unit.move_at(self.unit.target)
         else:
             self.unit.target = self.unit.my_mothership
@@ -121,10 +123,10 @@ class Harvester(Role):
             if drone_distance_pair == closest_drone:
                 self.unit.previous_target = Point(self.unit.x, self.unit.y)
                 self.unit.__class__.unavailable_asteroids.remove(asteroid)
-                self.unit.move_to_the_closest_asteroid()
+                self.move_to_the_closest_asteroid()
                 coords = Point(drone_distance_pair[0].x, drone_distance_pair[0].y)
                 drone_distance_pair[0].previous_target = coords
-                drone_distance_pair[0].move_to_the_closest_asteroid()
+                drone_distance_pair[0].role.move_to_the_closest_asteroid()
                 break
         else:
             raise CantInterceptException
@@ -183,3 +185,8 @@ class Harvester(Role):
                 if asteroid_distance_pair[0] == drone.target:
                     distances.remove(asteroid_distance_pair)
                     break
+
+
+class Guardian(Fighter):
+    def __init__(self, drone):
+        super().__init__(drone)
