@@ -15,29 +15,34 @@ class AttackPlan:
         self.advance_distance = None
 
     def set_mothership(self, mothership):
+        """Привязка материнского корабля"""
         if not self.my_mothership:
             self.my_mothership = mothership
             self.mothership_position_coefficients = self.check_base_position()
             self.create_defense_positions()
 
     def start_attack(self, target_mothership):
+        """Инициализация наступления на вражескую базу"""
         self.target_mothership = target_mothership
         self.calculate_attack_stages()
         self.create_attack_positions()
 
     def go_to_attack_position(self, soldier):
+        """Отправка дрона на позицию для атаки"""
         if self.attack_positions:
             index = soldier.__class__.fighters.index(soldier)
             soldier.target = self.attack_positions[index]
             soldier.move_at(soldier.target)
 
     def go_to_defense_position(self, soldier):
+        """Отправка дрона на позицию для обороны"""
         if self.defense_positions:
             index = soldier.__class__.guardians.index(soldier)
             soldier.target = self.defense_positions[index]
             soldier.move_at(soldier.target)
 
     def check_base_position(self):
+        """Проверка расположения материнского корабля на поле боя"""
         if self.my_mothership.x == 90:
             if self.my_mothership.y == 90:
                 return 1, 1
@@ -50,6 +55,7 @@ class AttackPlan:
                 return -1, -1
 
     def create_defense_positions(self):
+        """создание позиций для обороны"""
         point = Point(self.my_mothership.x + (150 * self.mothership_position_coefficients[0]),
                       self.my_mothership.y + (50 * self.mothership_position_coefficients[1]))
         self.defense_positions.append(point)
@@ -86,6 +92,7 @@ class AttackPlan:
 
     @staticmethod
     def rebase_drone_in_formation(point, vector):
+        """Перерасчет позиции в звене, если дрон выходит за пределы поля боя"""
         return Point(point.x - vector.x * 5, point.y - vector.y * 5)
 
     def advance_to_next_position(self):
@@ -94,6 +101,7 @@ class AttackPlan:
         self.create_attack_positions()
 
     def abort_attack(self, fighters):
+        """Переход в отступление"""
         self.target_mothership = None
         self.attack_stage = 0
         self.attack_positions = []

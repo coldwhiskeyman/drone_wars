@@ -38,6 +38,7 @@ class Fighter(Role):
                 return drone
 
     def check_target_base(self):
+        """проверка на вражескую базу в радиусе поражения"""
         if self.unit.attack_plan.target_mothership:
             if self.unit.attack_plan.target_mothership.is_alive:
                 return self.unit.distance_to(self.unit.attack_plan.target_mothership) <= SHOT_DISTANCE
@@ -80,6 +81,7 @@ class Harvester(Role):
                 self.move_to_the_closest_asteroid()
 
     def make_route(self, max_payload):
+        """прокладка оптимального маршрута по астероидам"""
         if self.unit.target.payload < max_payload:
             self.unit.next_target = self.get_next_asteroid()
             if self.unit.next_target:
@@ -167,6 +169,7 @@ class Harvester(Role):
             return (min(distances, key=lambda x: x[1]))[0]
 
     def get_distances(self):
+        """получение дистанций до возможных источников элериума"""
         distances_to_asteroids = [(asteroid, self.unit.distance_to(asteroid)) for asteroid in self.unit.asteroids
                                   if asteroid not in self.unit.__class__.unavailable_asteroids]
 
@@ -180,6 +183,10 @@ class Harvester(Role):
         return distances_to_asteroids + distances_to_dead_enemies + distances_to_motherships
 
     def remove_asteroid_occupied_by_enemy(self, drone, distance_to_target, distances):
+        """
+        исключение астероида из потенциальных целей,
+        если на него нацелен вражеский астероид
+        """
         if drone not in self.unit.__class__.my_team and drone.distance_to(drone.target) < distance_to_target:
             for asteroid_distance_pair in distances:
                 if asteroid_distance_pair[0] == drone.target:

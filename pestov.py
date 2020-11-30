@@ -43,11 +43,13 @@ class PestovDrone(Drone):
         self.attack_plan.set_mothership(self.my_mothership)
 
     def register_drone(self):
+        """Регистрация дрона в плане наступления"""
         if self.__class__.attack_plan is None:
             self.__class__.attack_plan = AttackPlan()
         self.attack_plan = self.__class__.attack_plan
 
     def change_role(self, role):
+        """алгоритм смены роли"""
         if role == 'fighter':
             self.role = Fighter(self)
             self.offensive = True
@@ -128,9 +130,10 @@ class PestovDrone(Drone):
         self.move_at(self.target)
 
     def game_step(self):
+        """базовый игровой метод"""
         super().game_step()
 
-        if not self.is_alive:
+        if not self.is_alive:  # действие при смерти дрона
             self.role = None
             if self in self.__class__.harvesters:
                 self.__class__.harvesters.remove(self)
@@ -143,15 +146,15 @@ class PestovDrone(Drone):
             if asteroid not in self.__class__.unavailable_asteroids and asteroid.is_empty:
                 self.__class__.unavailable_asteroids.append(asteroid)
 
-        if self.health <= 50:
+        if self.health <= 50:  # переход в отступление
             self.retreat()
 
-        if isinstance(self.role, Harvester):
+        if isinstance(self.role, Harvester):  # действия для роли Harvester
 
-            if self.waiting:  # возможные действия, при ожидании на базе
+            if self.waiting:
                 if len(self.asteroids) > len(self.__class__.unavailable_asteroids):
                     self.waiting = False
-                    self.try_to_depart()  # отправка на добычу, при наличии свободных астероидов
+                    self.try_to_depart()
 
             for mothership in self.scene.motherships:
                 if mothership != self.my_mothership and self.near(mothership):
@@ -165,7 +168,7 @@ class PestovDrone(Drone):
                 self.change_role(GUARDIAN)
                 self.retreat()
 
-        elif isinstance(self.role, Fighter) and not isinstance(self.role, Guardian):
+        elif isinstance(self.role, Fighter) and not isinstance(self.role, Guardian):  # действия для роли Fighter
             if self.offensive:
                 if not self.attack_plan.target_mothership:
                     for mothership in self.scene.motherships:
@@ -211,17 +214,6 @@ class PestovDrone(Drone):
             if self.attacking:
                 self.attack_mode()
 
-            # if not self.is_moving and self.target:
-            #     if self.near(self.target) and self.offensive:
-            #         pass
-            #     elif self.near(self.target):
-            #         self.offensive = True
-            #     elif self.near(self.my_mothership) or self.health >= 80:
-            #         self.offensive = True
-            #         self.attack_plan.go_to_attack_position(self)
-            #     else:
-            #         self.move_to_mothership()
-
             if self.count_dead() >= 3 and self.count_enemies() >= 5 - self.count_dead():
                 self.change_role(GUARDIAN)
                 self.retreat()
@@ -229,7 +221,7 @@ class PestovDrone(Drone):
             elif not self.enemies_alive():
                 self.change_role(HARVESTER)
 
-        elif isinstance(self.role, Guardian):
+        elif isinstance(self.role, Guardian):  # действия для роли Guardian
             if self.target not in self.attack_plan.defense_positions or not self.near(self.target) and self.health >= 80:
                 self.attack_plan.go_to_defense_position(self)
             elif self.near(self.target):
@@ -244,6 +236,7 @@ class PestovDrone(Drone):
                 self.change_role(FIGHTER)
 
     def count_enemies(self):
+        """подсчет живых врагов"""
         count = 0
         for drone in self.scene.drones:
             if drone not in self.__class__.my_team and drone.is_alive:
@@ -251,6 +244,7 @@ class PestovDrone(Drone):
         return count
 
     def count_dead(self):
+        """подсчет потерь"""
         count = 0
         for drone in self.scene.drones:
             if isinstance(drone, PestovDrone) and not drone.is_alive:
@@ -258,6 +252,7 @@ class PestovDrone(Drone):
         return count
 
     def enemies_alive(self):
+        """Проверка, остались ли живые вражеские дроны"""
         for drone in self.scene.drones:
             if drone not in self.__class__.my_team and drone.is_alive:
                 return True
@@ -283,6 +278,7 @@ class PestovDrone(Drone):
             raise RoleError('check_for_enemy_drones: Только истребитель может участвовать в бою')
 
     def check_target_base(self):
+        """проверка на вражескую базу в радиусе поражения"""
         if isinstance(self.role, (Fighter, Guardian)):
             return self.role.check_target_base()
         else:
